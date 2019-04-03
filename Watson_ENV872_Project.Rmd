@@ -8,6 +8,8 @@ geometry: margin=2.54cm
 title: Experiment Title
 subtitle: https://github.com/cwatson1013/Env_Data_Analysis_Final_Proj.git
 author: Caroline Watson
+toc: true
+toc_depth: 2
 abstract: "Experimental overview. This section should be no longer than 250 words."
 fontsize: 12pt
 mainfont: Times New Roman
@@ -25,15 +27,26 @@ mainfont: Times New Roman
 
 <Setup the global options for the R chunks in your document>
 
-<Note: set up autoreferencing for figures and tables in your document>
+<Note: set up autoreferencing for figures and tables in your document> <\autoref{figurelabel}>
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
 # Set your working directory
+setwd("/Users/carolinewatson/Documents/Spring 2019/Environmental Data Analytics/Final_Project")
 
 # Load your packages
+suppressMessages(library(tidyverse))
+library(ggplot2)
+library(leaflet)
+library(dplyr)
+library(RColorBrewer)
+library(viridis)
 
 # Set your ggplot theme
+caroline_theme <- theme_classic(base_size = 16) + 
+  theme(axis.text = element_text(color = "black"), 
+        legend.position = "right")
 
+theme_set(caroline_theme)
 ```
 
 
@@ -51,6 +64,12 @@ mainfont: Times New Roman
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
 
+```{r, message=FALSE, echo=TRUE}
+
+#summary of data structure
+
+
+```
 \newpage
 
 # Exploratory Data Analysis and Wrangling
