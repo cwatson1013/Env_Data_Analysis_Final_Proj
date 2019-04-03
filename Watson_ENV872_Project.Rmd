@@ -10,7 +10,7 @@ subtitle: https://github.com/cwatson1013/Env_Data_Analysis_Final_Proj.git
 author: Caroline Watson
 toc: true
 toc_depth: 2
-abstract: "Experimental overview. This section should be no longer than 250 words."
+abstract: "Experimental overview. This section should be no longer than 250 words. put abstract here"
 fontsize: 12pt
 mainfont: Times New Roman
 ---
@@ -40,6 +40,9 @@ library(leaflet)
 library(dplyr)
 library(RColorBrewer)
 library(viridis)
+library(knitr)
+library(kableExtra)
+library(lubridate)
 
 # Set your ggplot theme
 caroline_theme <- theme_classic(base_size = 16) + 
@@ -66,15 +69,66 @@ theme_set(caroline_theme)
 
 ```{r, message=FALSE, echo=TRUE}
 
-#summary of data structure
+#reading in data file
+carbon.data <- read.csv("./Data/Raw/NTL-LTER_Lake_Carbon_Raw.csv")
 
+#structure of data frame
+carbon.data_summary <- summary(carbon.data)
+
+#summary of data structure
+kable(carbon.data_summary) %>%
+  kable_styling()
 
 ```
+
 \newpage
 
 # Exploratory Data Analysis and Wrangling
 
 <Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
+
+```{r}
+#class of sampledate column
+class(carbon.data$sampledate)
+
+#converting sampledate to a date in R
+carbon.data$sampledate <- as.Date(carbon.data$sampledate, format = "%m/%d/%y")
+
+#checking class of sampledate
+class(carbon.data$sampledate)
+
+#summary of the dataset
+head(carbon.data)
+summary(carbon.data)
+colnames(carbon.data)
+dim(carbon.data)
+
+#renaming columns
+colnames(carbon.data)[1:5] <- c("Lake.ID", "Lake.Name", "Year", "Day.Number", "Date")
+```
+
+```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig1}Dissolved Organic Carbon (DOC) over time"}
+#graph looking at DOC over time
+ggplot(carbon.data) +
+  geom_point(aes(x = carbon.data$Year, 
+  y = carbon.data$doc))
+```
+
+The following graphs explore the Carbon dataset. \autoref{fig:fig1} shows dissolved organic carbon over time. \autoref{fig:fig1} was created to determine if there was a pattern of dissolved organic carbon in lakes over the years. \autoref{fig:fig2} is a frequency polygon graph looking at the dissolved inorganic carbon (DIC) in each lake. This graph was created to see if there are some lakes with higher DIC than others, which could influence further analysis. 
+
+```{r, warning = FALSE, fig.cap="\\label{fig:fig2}Dissolved Inorganic Carbon in each Lake"}
+#frequency polygon graph looking at DIC in each lake
+ggplot(carbon.data) + 
+  geom_freqpoly(aes(x = carbon.data$DIC_mg, 
+                 color = Lake.Name), bins = 20)
+
+#
+```
+
+```{r}
+#selecting date, DIC, DOC, Lake Name
+
+```
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
