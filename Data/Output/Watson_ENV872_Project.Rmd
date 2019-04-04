@@ -29,7 +29,7 @@ mainfont: Times New Roman
 
 <Note: set up autoreferencing for figures and tables in your document>
 
-```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+```{r setup, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE, eval=TRUE}
 # Set your working directory
 setwd("/Users/carolinewatson/Documents/Spring 2019/Environmental Data Analytics/Final_Project/Data/Output")
 
@@ -121,12 +121,11 @@ ggplot(carbon.data) +
 The following graphs explore the Carbon dataset. \autoref{fig:fig1} shows dissolved organic carbon over time. \autoref{fig:fig1} was created to determine if there was a pattern of dissolved organic carbon in lakes over the years. \autoref{fig:fig2} is a frequency polygon graph looking at the dissolved inorganic carbon (DIC) in each lake. This graph was created to see if there are some lakes with higher DIC than others, which could influence further analysis. 
 
 ```{r, warning = FALSE, fig.cap="\\label{fig:fig2}Dissolved Inorganic Carbon in each Lake"}
-#frequency polygon graph looking at DIC in each lake
+#frequency polygon graph looking at DOC in each lake
 ggplot(carbon.data) + 
-  geom_freqpoly(aes(x = carbon.data$DIC_mg, 
+  geom_freqpoly(aes(x = carbon.data$doc, 
                  color = Lake.Name), bins = 20)
 
-#
 ```
 
 ```{r}
