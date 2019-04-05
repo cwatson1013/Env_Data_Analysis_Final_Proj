@@ -31,7 +31,7 @@ mainfont: Times New Roman
 
 ```{r setup, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE, eval=TRUE}
 # Set your working directory
-setwd("/Users/carolinewatson/Documents/Spring 2019/Environmental Data Analytics/Final_Project/Data/Output")
+setwd("/Users/carolinewatson/Documents/Spring 2019/Environmental Data Analytics/Final_Project/Data/Code")
 
 # Load your packages
 suppressMessages(library(tidyverse))
@@ -125,14 +125,60 @@ The following graphs explore the Carbon dataset. \autoref{fig:fig1} shows dissol
 ggplot(carbon.data) + 
   geom_freqpoly(aes(x = carbon.data$doc, 
                  color = Lake.Name), bins = 20)
+```
+
+```{r}
+#filtering dataset by depth id and depth description and then selecting certain columns
+carbon.data.skinny <- carbon.data %>%
+  filter(depth_id == -2 | depth_id == -1 | depth_id == 7) %>%
+  filter(depth == "Hypolimnion" | depth == "Epilimnion" | depth == "PML" |
+           depth == "Metalimnion") %>%
+  select(Lake.ID:depth_id, doc)
+
+#saving processed file to the processed folder
+write.csv(carbon.data.skinny, 
+          file = "./Data/Processed/NTL-LTER_Lake_Carbon_Processed.csv")
+```
+
+```{r}
+#graph looking at doc with depth
+ggplot(carbon.data.skinny) +
+  geom_bar(aes(x = depth, y = doc), stat = "identity")
 
 ```
 
 ```{r}
-#selecting date, DIC, DOC, Lake Name
+#plot of the DOC concentrations in each lake at each depth; color represents the depth
+ggplot(carbon.data.skinny) + 
+  geom_bar(aes(x = Lake.Name, y = doc, fill = depth), stat = "identity", las = 2) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ```
 
+```{r}
+#plot of the depth vs DOC with geom_point
+ggplot(carbon.data.skinny) +
+  geom_point(aes(x = depth, 
+                 y = doc))
+```
+
+```{r}
+#plot of DOC in each lake
+ggplot(carbon.data.skinny) + 
+  geom_freqpoly(aes(x = doc, color = Lake.Name), bins = 20)
+
+```
+
+```{r}
+#make a new column with seasons that are seperated by daynum; then write a pipe function saying if daynum == [1:150], "summer" etc
+carbon.data.separate$season <- NA
+
+#divide the daynum into seasons, run an anova on this to see if season is a random effect
+
+
+#make a graph with facet wrap for doc and season; facet wrap by season & facet wrap by depth or lake?
+
+```
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
 
