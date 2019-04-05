@@ -1,0 +1,199 @@
+---
+output: 
+  pdf_document:
+    keep_tex: yes
+    fig_caption: yes
+    number_sections: yes
+geometry: margin=2.54cm
+title: Experiment Title
+subtitle: https://github.com/cwatson1013/Env_Data_Analysis_Final_Proj.git
+author: Caroline Watson
+toc: true
+toc_depth: 2
+abstract: "Experimental overview. This section should be no longer than 250 words. put abstract here"
+fontsize: 12pt
+mainfont: Times New Roman
+---
+
+<Information in these brackets are used for annotating the RMarkdown file. They will not appear in the final version of the PDF document>
+
+\newpage
+\tableofcontents 
+\newpage
+\listoftables 
+\newpage
+\listoffigures 
+\newpage
+
+<Setup the global options for the R chunks in your document>
+
+<Note: set up autoreferencing for figures and tables in your document>
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE, echo=FALSE, eval=TRUE}
+# Set your working directory
+setwd("/Users/carolinewatson/Documents/Spring 2019/Environmental Data Analytics/Final_Project/Data/Code")
+
+# Load your packages
+suppressMessages(library(tidyverse))
+library(ggplot2)
+library(leaflet)
+library(dplyr)
+library(RColorBrewer)
+library(viridis)
+library(knitr)
+library(kableExtra)
+library(lubridate)
+
+# Set your ggplot theme
+caroline_theme <- theme_classic(base_size = 16) + 
+  theme(axis.text = element_text(color = "black"), 
+        legend.position = "right")
+
+theme_set(caroline_theme)
+```
+
+
+# Research Question and Rationale
+
+<Paragraph detailing the rationale for your analysis. What is the significant application and/or interest in this topic? Connect to environmental topic(s)/challenge(s).>
+
+The rationale for this analysis is because there typically is a relationship between dissolved organic carbon and depth. There is also typically a relationship between land area surrounding lakes that have high amounts of organic soils usually deposit large amounts of dissolved organic carbon into lakes. Dissolved inorganic carbon is an important part of the carbon cycle and supplies nutrients for some organisms. Most DOC is natural, but high amounts can indicate human influence, such as land surrounding the lake that is high in organic amount. 
+
+<Paragraph detailing your research question(s) and goals. What do you want to find out? Include a sentence (or a few) on the dataset you are using to answer this question - just enough to give your reader an idea of where you are going with the analysis.>
+
+I want to find out whether there is a relationship between dissolved organic carbon (DOC) and depth. If there is a relationship between these two variables, I want to see if this relationship varies seasonally. I am using a dataset that contains various parameter measurements for different lakes in the North Temperate Region in Wisconsin, USA. Parameters measured include temperature, depth, dissolved organic carbon, dissolved inorganic carbon, particulate organic matter and others.
+
+\newpage
+
+# Dataset Information
+
+<Information on how the dataset for this analysis were collected, the data contained in the dataset, and any important pieces of information that are relevant to your analyses. This section should contain much of same information as the README file for the dataset but formatted in a way that is more narrative.>
+
+<Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
+
+```{r, message=FALSE, echo=TRUE}
+
+#reading in data file
+carbon.data <- read.csv("./Data/Raw/NTL-LTER_Lake_Carbon_Raw.csv")
+
+#structure of data frame
+carbon.data_summary <- summary(carbon.data)
+
+#summary of data structure
+kable(carbon.data_summary) %>%
+  kable_styling()
+
+```
+
+\newpage
+
+# Exploratory Data Analysis and Wrangling
+
+<Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
+
+```{r}
+#class of sampledate column
+class(carbon.data$sampledate)
+
+#converting sampledate to a date in R
+carbon.data$sampledate <- as.Date(carbon.data$sampledate, format = "%m/%d/%y")
+
+#checking class of sampledate
+class(carbon.data$sampledate)
+
+#summary of the dataset
+head(carbon.data)
+summary(carbon.data)
+colnames(carbon.data)
+dim(carbon.data)
+
+#renaming columns
+colnames(carbon.data)[1:5] <- c("Lake.ID", "Lake.Name", "Year", "Day.Number", "Date")
+```
+
+```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig1}Dissolved Organic Carbon (DOC) over time"}
+#graph looking at DOC over time
+ggplot(carbon.data) +
+  geom_point(aes(x = carbon.data$Year, 
+  y = carbon.data$doc))
+```
+
+The following graphs explore the Carbon dataset. \autoref{fig:fig1} shows dissolved organic carbon over time. \autoref{fig:fig1} was created to determine if there was a pattern of dissolved organic carbon in lakes over the years. \autoref{fig:fig2} is a frequency polygon graph looking at the dissolved inorganic carbon (DIC) in each lake. This graph was created to see if there are some lakes with higher DIC than others, which could influence further analysis. 
+
+```{r, warning = FALSE, fig.cap="\\label{fig:fig2}Dissolved Inorganic Carbon in each Lake"}
+#frequency polygon graph looking at DOC in each lake
+ggplot(carbon.data) + 
+  geom_freqpoly(aes(x = carbon.data$doc, 
+                 color = Lake.Name), bins = 20)
+```
+
+```{r}
+#filtering dataset by depth id and depth description and then selecting certain columns
+carbon.data.skinny <- carbon.data %>%
+  filter(depth_id == -2 | depth_id == -1 | depth_id == 7) %>%
+  filter(depth == "Hypolimnion" | depth == "Epilimnion" | depth == "PML" |
+           depth == "Metalimnion") %>%
+  select(Lake.ID:depth_id, doc)
+
+#saving processed file to the processed folder
+write.csv(carbon.data.skinny, 
+          file = "./Data/Processed/NTL-LTER_Lake_Carbon_Processed.csv")
+```
+
+```{r}
+#graph looking at doc with depth
+ggplot(carbon.data.skinny) +
+  geom_bar(aes(x = depth, y = doc), stat = "identity")
+
+```
+
+```{r}
+#plot of the DOC concentrations in each lake at each depth; color represents the depth
+ggplot(carbon.data.skinny) + 
+  geom_bar(aes(x = Lake.Name, y = doc, fill = depth), stat = "identity", las = 2) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+```{r}
+#plot of the depth vs DOC with geom_point
+ggplot(carbon.data.skinny) +
+  geom_point(aes(x = depth, 
+                 y = doc))
+```
+
+```{r}
+#plot of DOC in each lake
+ggplot(carbon.data.skinny) + 
+  geom_freqpoly(aes(x = doc, color = Lake.Name), bins = 20)
+
+```
+
+```{r}
+#make a new column with seasons that are seperated by daynum; then write a pipe function saying if daynum == [1:150], "summer" etc
+carbon.data.separate$season <- NA
+
+#divide the daynum into seasons, run an anova on this to see if season is a random effect
+
+
+#make a graph with facet wrap for doc and season; facet wrap by season & facet wrap by depth or lake?
+
+```
+<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
+
+
+\newpage
+
+# Analysis
+<Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
+
+<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
+
+
+\newpage
+
+# Summary and Conclusions
+<Summarize your major findings from your analyses. What conclusions do you draw from your findings? Make sure to apply this to a broader application for the research question you have answered.>
+
+
+
