@@ -8,8 +8,6 @@ geometry: margin=2.54cm
 title: Looking at Dissolved Organic Carbon in Wisconsin Lakes
 subtitle: https://github.com/cwatson1013/Env_Data_Analysis_Final_Proj.git
 author: Caroline Watson
-toc: true
-toc_depth: 2
 abstract: "Experimental overview. This section should be no longer than 250 words. put abstract here"
 fontsize: 12pt
 mainfont: Times New Roman
@@ -46,6 +44,9 @@ library(viridis)
 library(knitr)
 library(kableExtra)
 library(lubridate)
+library(lme4)
+library(nlme)
+library(trend)
 
 # Set your ggplot theme
 caroline_theme <- theme_classic(base_size = 16) + 
@@ -74,17 +75,20 @@ I want to find out whether there is a relationship between dissolved organic car
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
 
-```{r, message=FALSE, warning=FALSE, tbls="Summary of NTL-LTER Lake Carbon Data"}
+```{r, message=FALSE, warning=FALSE, tbls="Summary of NTL-LTER Lake Carbon Data", results="asis"}
 
 #reading in data file
 carbon.data <- read.csv("../Raw/NTL-LTER_Lake_Carbon_Raw.csv")
 
 #structure of data frame
-carbon.data_summary <- summary(carbon.data)
+carbon.data.summary <- summary(carbon.data)
 
 #summary of data structure
-kable(carbon.data_summary, caption = "Summary of Carbon Data from NTL-LTER Lakes in Wisconsin") %>%
-  kable_styling(latex_options = c("hold_position"))
+kable(carbon.data.summary, caption = "Summary of Carbon Data from NTL-LTER Lakes in Wisconsin") %>% kable_styling(latex_options = c("hold_position", "striped", "scale_down"))
+
+#install.packages("xtable")
+library(xtable)
+xtable(carbon.data.summary)
 
 ```
 
@@ -136,36 +140,50 @@ carbon.data.skinny <- carbon.data %>%
   filter(depth_id == -2 | depth_id == -1 | depth_id == 7) %>%
   filter(depth == "Hypolimnion" | depth == "Epilimnion" | depth == "PML" |
            depth == "Metalimnion") %>%
+  mutate(depth = factor(depth, levels = c("Epilimnion", "Metalimnion", "Hypolimnion", "PML"))) %>%
+  filter(is.na(doc) == FALSE) %>%
   select(Lake.ID:depth_id, doc)
+
+#converting dat column to date instead of factor
+carbon.data$sampledate <- as.Date(carbon.data$Date, format = "%m/%d/%y")
 
 #saving processed file to the processed folder
 write.csv(carbon.data.skinny, 
           file = "../Processed/NTL-LTER_Lake_Carbon_Processed.csv")
 ```
 
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig3} Dissolved Organic Carbon Varying with Depth. Epilimnion is the surface of the lake, Metalimion is the middle of the lake, and Hypolimnion is the bottom of the lake"}
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig3} QQplot showing whether data for dissolved organic carbon is normally distributed."}
+#qqplot of doc to see if there is a normal relationship
+qqnorm(carbon.data.skinny$doc)
+qqline(carbon.data.skinny$doc)
+```
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved Organic Carbon Varying with depth section of each lake. Depth increases from left to right in graph, with Epilimnion being the surface of the lake."}
 #graph looking at doc with depth
 ggplot(carbon.data.skinny) +
-  geom_bar(aes(x = depth, y = doc), stat = "identity")
+  geom_boxplot(aes(x = depth, y = doc)) +
+  labs(x = "Depth", y = "Dissolved Organic Carbon")
 
 ```
 
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved Organic Carbon concentrations in each lake. Depth of lake is represented by various colors."}
+
+
+```{r, fig.height = 6, fig.width = 5, warning = FALSE, fig.cap="\\label{fig:fig5} Dissolved Organic Carbon concentrations in each lake. Depth of lake is represented by various colors."}
 #plot of the DOC concentrations in each lake at each depth; color represents the depth
 ggplot(carbon.data.skinny) + 
   geom_bar(aes(x = Lake.Name, y = doc, fill = depth), stat = "identity", las = 2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "Lake Name", y = "Dissolved Organic Carbon", fill = "Depth")
 
 ```
 
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved organic carbon concentratoin varying with depth."}
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig6} Dissolved organic carbon concentratoin varying with depth."}
 #plot of the depth vs DOC with geom_point
-ggplot(carbon.data.skinny) +
-  geom_point(aes(x = depth, 
-                 y = doc))
+#ggplot(carbon.data.skinny) +
+  #geom_point(aes(x = depth, y = doc))
 ```
 
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig5} Dissolved organic carbon concentration in each lake."}
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig7} Dissolved organic carbon concentration in each lake."}
 #plot of DOC in each lake
 ggplot(carbon.data.skinny) + 
   geom_freqpoly(aes(x = doc, color = Lake.Name), bins = 20)
@@ -174,21 +192,115 @@ ggplot(carbon.data.skinny) +
 
 ```{r}
 #make a new column with seasons that are seperated by daynum; then write a pipe function saying if daynum == [1:150], "summer" etc
-#carbon.data.separate$season <- NA
+
+#creating an empty column titled season
+#carbon.data.skinny$season <- NA
 
 #divide the daynum into seasons, run an anova on this to see if season is a random effect
 
+#random effect anova
 
 #make a graph with facet wrap for doc and season; facet wrap by season & facet wrap by depth or lake?
+```
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig8} Dissolved organic carbon concentration over time with day number of the year on the x-axis."}
+#graph looking at how doc varies over time with Day Number on the x-axis
+ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
+  geom_point() +
+  labs(x = "Day of Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2")
+```
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig9} Dissolved organic carbon concentration over time with year on the x-axis.", fig.align="center"}
+
+#plot looking at how doc varies over the years
+ggplot(carbon.data.skinny, aes(x = Year, y = doc, color = Lake.Name)) +
+  geom_point(alpha = 0.5) +
+  labs(x = "Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2")
 
 ```
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
+\autoref{fig:fig7} shows the day number of the year plotted against dissolved organic carbon wiht the color representing each lake. From \autoref{fig:fig7} it is apparent that sampling was done mainly between days 140 and 250 of the year, which is during spring and summer months. From \autoref{fig:fig7} it is apparent that there is a cluseter of data points between 5 and 15 (concentrations) which signals that there is likely not a linear relationship between dissovled organic carbon and time of year. Because of this, a time series analysis will be conducted as part of the statistical tests.
 
 \newpage
 
 # Analysis
 <Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
+```{r}
+
+#linear model 
+test1 <- lmer(data = carbon.data.skinny, doc ~ depth + 1|Lake.Name)
+
+test2 <- lme(data = carbon.data.skinny, doc ~ depth, random = ~1|Lake.Name)
+
+test3 <- lm(data = carbon.data.skinny, doc ~ depth*Lake.Name)
+summary(test3)
+
+test4 <- lm(data = carbon.data.skinny, doc ~ depth)
+summary(test4) #there is a significant trend between dissolved organic carbon and depth, particularly between doc and the surface water, middle and deep waters; the summary shows that there is no significant trend between doc and the deep water samples
+
+#plot of this releationship between doc and depth
+ggplot(carbon.data.skinny, aes(x = depth, y = doc)) + 
+  geom_boxplot() +
+  scale_color_brewer(palette = "Set2") +
+  geom_abline(intercept = 7.5016, slope = -0.9835)
+
+#This graph plots information from test 4 above and includes an abline.
+
+test5 <- lme(data = carbon.data.skinny, doc ~ depth*Day.Number, random = ~1|Lake.Name)
+summary(test5)
+
+test6 <- lm(data = carbon.data.skinny, doc ~ Day.Number)
+summary(test6)
+#mixed effects ANOVA because
+
+#random effect ANOVA to see if seasonality has a random effect on DOC and depth
+
+
+#check AIC score to see which model best describes what I'm trying to answer
+
+#generalized linear model
+
+#run a linear model to determine the significance of the different variables - then plot this linear model (one with doc & depth, another with doc & daynumber)
+
+#running a hierarchical linear model with time as a random effect
+TimeTest.auto <- lme(data = carbon.data.skinny, 
+                     doc ~ depth*Lake.Name, 
+                     random = ~1|Year)
+TimeTest.auto
+summary(TimeTest.auto) 
+
+#run a break point test to see if there are any break points in the data
+
+
+
+```
+
+Rationale for why I did the ANOVA tests and the GLM tests
+```{r}
+#Mann-Kendall Test for dissolved organic carbon
+mk.test(carbon.data.skinny$doc)
+
+#Running a Pettite test on doc in dataset
+pettitt.test(carbon.data.skinny$doc)
+
+```
+
+```{r, echo=FALSE, eval=TRUE}
+
+#graph showing DOC varying over time with each lake as the color
+#doc.time <- ggplot(carbon.data.skinny) +
+  #geom_freqpoly(aes(x = Year, y = doc), bins = 20)
+
+#print(doc.time)
+
+#graph showing DOC varying depending on depth (facet wrap by season)
+
+
+
+```
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
 
