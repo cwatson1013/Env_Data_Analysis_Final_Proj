@@ -211,6 +211,14 @@ ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
   scale_color_brewer(palette = "Set2")
 ```
 
+```{r}
+#same graph as above, but removing the two outliers to get a better understanding of the distribution of DOC throughout the year
+ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
+  geom_point() +
+  labs(x = "Day of Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2")
+```
+
 ```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig9} Dissolved organic carbon concentration over time with year on the x-axis.", fig.align="center"}
 
 #plot looking at how doc varies over the years
@@ -265,12 +273,25 @@ summary(test6)
 
 #run a linear model to determine the significance of the different variables - then plot this linear model (one with doc & depth, another with doc & daynumber)
 
+```
+
+
+```{r}
 #running a hierarchical linear model with time as a random effect
 TimeTest.auto <- lme(data = carbon.data.skinny, 
-                     doc ~ depth*Lake.Name, 
+                     doc ~ depth, 
                      random = ~1|Year)
 TimeTest.auto
-summary(TimeTest.auto) 
+summary(TimeTest.auto)
+anova(TimeTest.auto)
+
+#hierarchical model with Date as the random effect instead of Year
+time.test.auto2 <- lme(data = carbon.data.skinny, 
+                       doc ~ depth, 
+                       random = ~1|Date)
+
+summary(time.test.auto2)
+anova(time.test.auto2)
 
 #run a break point test to see if there are any break points in the data
 
@@ -283,18 +304,65 @@ Rationale for why I did the ANOVA tests and the GLM tests
 #Mann-Kendall Test for dissolved organic carbon
 mk.test(carbon.data.skinny$doc)
 
+```
+A Mann-Kendall test was run to determine if there is a monotonic trend in dissolved organic carbon in all of the lakes over time. The Mann-Kendall test results have a very low p-value (p-value = < 2.2e-16) and a negative z-score. Since the p-value is much smaller than 0.05, we reject the null hypothesis that there is no trend over time. The null hypothesis was rejected, which means we should run a Pettitt test to determine if and where there is a change point in the data. According to the Pettitt test, there is a possible chang point at row 1628. 
+
+```{r}
 #Running a Pettite test on doc in dataset
 pettitt.test(carbon.data.skinny$doc)
+```
+According to the Pettitt test, there is a possible chang point at row 1628. Thus, another Mann-Kendall test will be run to determine if there is a trend before and/or after the change point. 
+
+```{r}
+#Mann-Kendall test before changepoint
+mk.test(carbon.data.skinny$doc[1:1627])
+
+#Mann-Kendall test after changepoint
+mk.test(carbon.data.skinny$doc[1628:3558])
+```
+The Mann-Kendall test between rows 1 and 1627 resulted in a p-value of 3.318e-13, indicating that we would reject the null hypothesis that there is no trend in this section of data. The z-score is positive, indicating the direction of the data is positive. The Mann-Kendall test from rows 1628 to 3558 also resulted in a very small p-value, indicating that we will reject the null hypothesis and know that there is a trend within these rows as well. Another Pettitt test will need to be run to determine the change point in each section. 
+
+```{r}
+#Pettitt test for rows 1:1627
+pettitt.test(carbon.data.skinny$doc[1:1627]) #another probable change point at 1628 + 791 = 2419
+
+#Pettitt test for rows 1628:3558
+pettitt.test(carbon.data.skinny$doc[1628:3558]) #another change point at 1628 + 928 = 2556
 
 ```
 
+```{r}
+#determining change point between 2419 and 2556
+pettitt.test(carbon.data.skinny$doc[2419:2556]) #breakpoint at 2419 + 100 = 2519
+
+#Mann-Kendall test to see if there is a trend between 2519 and 2556
+mk.test(carbon.data.skinny$doc[2519:2556]) #there is no trend between these rows, so the last breakpoint is 2519
+```
+
+```{r}
+
+#graph of doc concentration over time
+ggplot(carbon.data.skinny, aes(x = Date, y = doc, color = Lake.Name)) + 
+  geom_point(alpha=0.5, size = 2) +
+  labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  geom_vline(xintercept = as.Date("2000-08-23", origin = "1970-01-01"), color="#253494", lty = 2) +  #change point at row 1628
+  geom_vline(xintercept = as.Date("2006-08-21", origin = "1970-01-01"), color="#7fcdbb", lty = 2) +  #change point at 2419
+  geom_vline(xintercept = as.Date("2008-06-17", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+ #change point at 2556
+  geom_vline(xintercept = as.Date("1994-06-29", origin = "1970-01-01"), color="#253494", lty = 2)  
+  
+#graph of doc concentration over time (day.number)
+ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) + 
+  geom_point(alpha=0.5, size = 2) +
+  labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  geom_vline(xintercept = as.Date("2000-08-23", origin = "1970-01-01"), color="#253494", lty = 2) +  #change point at row 1628
+  geom_vline(xintercept = as.Date("2006-08-21", origin = "1970-01-01"), color="#7fcdbb", lty = 2) +  #change point at 2419
+  geom_vline(xintercept = as.Date("2008-06-17", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+ #change point at 2556
+  geom_vline(xintercept = as.Date("1994-06-29", origin = "1970-01-01"), color="#253494", lty = 2)  
+
+```
+
+
 ```{r, echo=FALSE, eval=TRUE}
-
-#graph showing DOC varying over time with each lake as the color
-#doc.time <- ggplot(carbon.data.skinny) +
-  #geom_freqpoly(aes(x = Year, y = doc), bins = 20)
-
-#print(doc.time)
 
 #graph showing DOC varying depending on depth (facet wrap by season)
 
