@@ -8,8 +8,6 @@ geometry: margin=2.54cm
 title: Looking at Dissolved Organic Carbon in Wisconsin Lakes
 subtitle: https://github.com/cwatson1013/Env_Data_Analysis_Final_Proj.git
 author: Caroline Watson
-toc: true
-toc_depth: 2
 abstract: "Experimental overview. This section should be no longer than 250 words. put abstract here"
 fontsize: 12pt
 mainfont: Times New Roman
@@ -46,6 +44,9 @@ library(viridis)
 library(knitr)
 library(kableExtra)
 library(lubridate)
+library(lme4)
+library(nlme)
+library(trend)
 
 # Set your ggplot theme
 caroline_theme <- theme_classic(base_size = 16) + 
@@ -74,17 +75,20 @@ I want to find out whether there is a relationship between dissolved organic car
 
 <Add a table that summarizes your data structure. This table can be made in markdown text or inserted as a `kable` function in an R chunk. If the latter, do not include the code used to generate your table.>
 
-```{r, message=FALSE, warning=FALSE, tbls="Summary of NTL-LTER Lake Carbon Data"}
+```{r, message=FALSE, warning=FALSE, tbls="Summary of NTL-LTER Lake Carbon Data", results="asis"}
 
 #reading in data file
 carbon.data <- read.csv("../Raw/NTL-LTER_Lake_Carbon_Raw.csv")
 
 #structure of data frame
-carbon.data_summary <- summary(carbon.data)
+carbon.data.summary <- summary(carbon.data)
 
 #summary of data structure
-kable(carbon.data_summary, caption = "Summary of Carbon Data from NTL-LTER Lakes in Wisconsin") %>%
-  kable_styling(latex_options = c("hold_position"))
+kable(carbon.data.summary, caption = "Summary of Carbon Data from NTL-LTER Lakes in Wisconsin") %>% kable_styling(latex_options = c("hold_position", "striped", "scale_down"))
+
+#install.packages("xtable")
+library(xtable)
+xtable(carbon.data.summary)
 
 ```
 
@@ -136,36 +140,74 @@ carbon.data.skinny <- carbon.data %>%
   filter(depth_id == -2 | depth_id == -1 | depth_id == 7) %>%
   filter(depth == "Hypolimnion" | depth == "Epilimnion" | depth == "PML" |
            depth == "Metalimnion") %>%
+  mutate(depth = factor(depth, levels = c("Epilimnion", "Metalimnion", "PML", "Hypolimnion"))) %>%
+  filter(is.na(doc) == FALSE) %>%
   select(Lake.ID:depth_id, doc)
+
+#converting dat column to date instead of factor
+carbon.data$sampledate <- as.Date(carbon.data$Date, format = "%m/%d/%y")
 
 #saving processed file to the processed folder
 write.csv(carbon.data.skinny, 
           file = "../Processed/NTL-LTER_Lake_Carbon_Processed.csv")
 ```
 
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig3} Dissolved Organic Carbon Varying with Depth. Epilimnion is the surface of the lake, Metalimion is the middle of the lake, and Hypolimnion is the bottom of the lake"}
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig3} QQplot showing whether data for dissolved organic carbon is normally distributed."}
+#qqplot of doc to see if there is a normal relationship
+qqnorm(carbon.data.skinny$doc)
+qqline(carbon.data.skinny$doc)
+
+#qqplot of log(doc) to see if this is better than the regular qqplot
+qqnorm(log(carbon.data.skinny$doc))
+qqline(log(carbon.data.skinny$doc))
+```
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved Organic Carbon Varying with depth section of each lake. Depth increases from left to right in graph, with Epilimnion being the surface of the lake."}
 #graph looking at doc with depth
 ggplot(carbon.data.skinny) +
-  geom_bar(aes(x = depth, y = doc), stat = "identity")
+  geom_boxplot(aes(x = depth, y = doc)) +
+  labs(x = "Depth", y = "Dissolved Organic Carbon")
 
-```
-
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved Organic Carbon concentrations in each lake. Depth of lake is represented by various colors."}
-#plot of the DOC concentrations in each lake at each depth; color represents the depth
-ggplot(carbon.data.skinny) + 
-  geom_bar(aes(x = Lake.Name, y = doc, fill = depth), stat = "identity", las = 2) +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-```
-
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved organic carbon concentratoin varying with depth."}
-#plot of the depth vs DOC with geom_point
+#histogram to look at the distribution of doc
 ggplot(carbon.data.skinny) +
-  geom_point(aes(x = depth, 
-                 y = doc))
+  geom_histogram(aes(x = doc), 
+                 binwidth = 0.5, fill = "grey", color = "black")
+
+#creating a density curve for the histogram 
+x <- seq(0, 55, length.out=10)
+df <- with(carbon.data.skinny, data.frame(x = x, y = dnorm(x, mean(doc), sd(doc))))
+
+#histogram to look at the distribution of doc and the density
+ggplot(carbon.data.skinny) +
+  geom_histogram(aes(x = doc), 
+                 binwidth = 0.5, fill = "grey", color = "black") +
+  geom_line(data = df, aes(x = x, y = y), color = "red")
+
+
+hist(carbon.data.skinny$doc, bins = 30)
+
 ```
 
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig5} Dissolved organic carbon concentration in each lake."}
+
+
+
+```{r, fig.height = 9, fig.width = 7, warning = FALSE, fig.cap="\\label{fig:fig6} Dissolved Organic Carbon concentrations in each lake. Depth of lake is represented by various colors."}
+
+#Violin plot with depth as the x-axis and doc as the y-axis
+ggplot(carbon.data.skinny) + 
+  geom_violin(aes(x = depth, y = doc, fill = depth), draw_quantiles = c(0.25, 0.5, 0.75)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette="Set2") +
+  labs(x = "Depth", y = "Dissolved Organic Carbon (mg/L)", fill = "Depth") +
+  facet_wrap(vars(Lake.Name), nrow = 4)
+
+dev.print(pdf,        # copies the plot to a the PDF file
+          "CW_Figure.pdf")
+```
+
+\autoref{fig:fig6} shows the distribution of dissolved organic carbon in each depth layer faceted by each lake. From \autoref{fig:fig6}
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig7} Dissolved organic carbon concentration in each lake."}
 #plot of DOC in each lake
 ggplot(carbon.data.skinny) + 
   geom_freqpoly(aes(x = doc, color = Lake.Name), bins = 20)
@@ -174,21 +216,204 @@ ggplot(carbon.data.skinny) +
 
 ```{r}
 #make a new column with seasons that are seperated by daynum; then write a pipe function saying if daynum == [1:150], "summer" etc
-#carbon.data.separate$season <- NA
+
+#creating an empty column titled season
+#carbon.data.skinny$season <- NA
 
 #divide the daynum into seasons, run an anova on this to see if season is a random effect
 
+#random effect anova
 
 #make a graph with facet wrap for doc and season; facet wrap by season & facet wrap by depth or lake?
+```
 
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig8} Dissolved organic carbon concentration over time with day number of the year on the x-axis."}
+#graph looking at how doc varies over time with Day Number on the x-axis
+ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
+  geom_point() +
+  labs(x = "Day of Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2")
+```
+
+```{r}
+#same graph as above, but removing the two outliers to get a better understanding of the distribution of DOC throughout the year
+ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
+  geom_point() +
+  labs(x = "Day of Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2")
+```
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, echo=FALSE, eval=TRUE fig.cap="\\label{fig:fig9} "Dissolved organic carbon concentration over time with year on the x-axis.""}
+
+#plot looking at how doc varies over the years
+ggplot(carbon.data.skinny, aes(x = Year, y = doc, color = Lake.Name)) +
+  geom_point(alpha = 0.5) +
+  labs(x = "Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2") 
+  
 ```
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
+\autoref{fig:fig8} shows the day number of the year plotted against dissolved organic carbon with the color representing each lake. From \autoref{fig:fig8} it is apparent that sampling was done mainly between days 140 and 250 of the year, which is during spring and summer months. From \autoref{fig:fig8} it is apparent that there is a cluseter of data points between 5 and 15 (concentrations) which signals that there is likely not a linear relationship between dissovled organic carbon and time of year. Because of this, a time series analysis will be conducted as part of the statistical tests.
 
 \newpage
 
 # Analysis
 <Include R chunks for 3+ statistical tests (display code and output) and 3+ final visualization graphs (display graphs only).>
+```{r}
+
+test3 <- aov(data = carbon.data.skinny, doc ~ depth*Lake.Name)
+summary(test3) # use this anova and then try log transforming it; talk about assumptions of ANOVA and justify why moving forward with it; can use lme to get a list of all the interactions between depth and lakes 
+
+test3_log <- aov(data = carbon.data.skinny, log(doc) ~ depth*Lake.Name)
+summary(test3_log) #F value is lower with log transformed data than with data that is not log transformed
+
+test4 <- lm(data = carbon.data.skinny, doc ~ depth)
+summary(test4) #there is a significant trend between dissolved organic carbon and depth, particularly between doc and the surface water, middle and deep waters; the summary shows that there is no significant trend between doc and the deep water samples
+
+#post-hoc Tukey test & plot
+
+#non-parametric tests
+
+```
+
+
+```{r}
+#running a hierarchical linear model with time as a random effect
+TimeTest.auto <- lme(data = carbon.data.skinny, 
+                     doc ~ depth, 
+                     random = ~1|Year)
+TimeTest.auto
+summary(TimeTest.auto)
+anova(TimeTest.auto)
+
+#hierarchical model with Date as the random effect instead of Year
+time.test.auto2 <- lme(data = carbon.data.skinny, 
+                       doc ~ depth, 
+                       random = ~1|Date)
+
+summary(time.test.auto2)
+anova(time.test.auto2)
+
+#run a break point test to see if there are any break points in the data
+
+
+
+```
+
+Rationale for why I did the ANOVA tests and the assumptions of anova
+```{r}
+#wrangling dataset down to just the five lakes I want to look at
+Carbon.five.lakes <- 
+  carbon.data.skinny %>%
+  select(-Lake.ID, -depth_id) %>%
+  filter(depth == "Metalimnion") %>%
+  filter(Lake.Name == "Peter Lake" | Lake.Name == "Paul Lake" | Lake.Name == "Tuesday Lake" | Lake.Name == "East Long Lake" | Lake.Name == "West Long Lake")
+
+#splitting data sets up into each lake data
+carbon.peter <- filter(Carbon.five.lakes, Lake.Name == "Peter Lake")
+
+carbon.paul<- filter(Carbon.five.lakes, Lake.Name == "Paul Lake")
+
+carbon.tuesday <- filter(Carbon.five.lakes, Lake.Name == "Tuesday Lake")
+
+carbon.east <- filter(Carbon.five.lakes, Lake.Name == "East Long Lake")
+
+carbon.west <- filter(Carbon.five.lakes, Lake.Name == "West Long Lake")
+
+#plot of doc over time in the five selected lakes for just the Metalimnion
+ggplot(Carbon.five.lakes, aes(x = Date, y = doc, color = Lake.Name)) + 
+  geom_point(alpha=0.5, size = 1) +
+  labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name")
+
+#Mann-Kendall Test for dissolved organic carbon in each lake
+
+#mk.test in Peter lake
+mk.test(carbon.peter$doc) #positive z score, so positive change and p-value is greater than 0.05, so we accept the null that there is no trend in data for Peter lake and DOC
+
+#mk.test in Paul lake 
+mk.test(carbon.paul$doc) #negative z-score indicates a negative trend and a low p-value means we will reject the null that there is no trend in the data
+
+#pettitt test in Paul Lake
+pettitt.test(carbon.paul$doc) #change point at row 138
+
+#mk.test in Paul Lake before and after change point
+mk.test(carbon.paul$doc[1:137]) #negative z score indicates a negative trend; p-value less than 0.05, so reject the null that there is no trend in the data and do another pettitt test
+mk.test(carbon.paul$doc[138:373]) #positive z-score indicates there's a positive trend  
+
+#mk.test in Tuesday lake
+mk.test(carbon.tuesday$doc) #positive z-score indicates a positive trend in the data and the p-value is very low, so we reject the null that there is no trend in the data
+
+#mk.test in West Long Lake
+
+#mk.test in East Long Lake
+
+
+#Pettitt test in Tuesday lake
+
+
+mk.test(carbon.data.skinny$doc)
+
+```
+A Mann-Kendall test was run to determine if there is a monotonic trend in dissolved organic carbon in all of the lakes over time. The Mann-Kendall test results have a very low p-value (p-value = < 2.2e-16) and a negative z-score. Since the p-value is much smaller than 0.05, we reject the null hypothesis that there is no trend over time. The null hypothesis was rejected, which means we should run a Pettitt test to determine if and where there is a change point in the data. According to the Pettitt test, there is a possible chang point at row 1628. 
+
+```{r}
+#Running a Pettite test on doc in dataset
+pettitt.test(carbon.data.skinny$doc)
+```
+According to the Pettitt test, there is a possible chang point at row 1628. Thus, another Mann-Kendall test will be run to determine if there is a trend before and/or after the change point. 
+
+```{r}
+#Mann-Kendall test before changepoint
+mk.test(carbon.data.skinny$doc[1:1627])
+
+#Mann-Kendall test after changepoint
+mk.test(carbon.data.skinny$doc[1628:3558])
+```
+The Mann-Kendall test between rows 1 and 1627 resulted in a p-value of 3.318e-13, indicating that we would reject the null hypothesis that there is no trend in this section of data. The z-score is positive, indicating the direction of the data is positive. The Mann-Kendall test from rows 1628 to 3558 also resulted in a very small p-value, indicating that we will reject the null hypothesis and know that there is a trend within these rows as well. Another Pettitt test will need to be run to determine the change point in each section. 
+
+```{r, echo=TRUE, eval=TRUE}
+#Pettitt test for rows 1:1627
+pettitt.test(carbon.data.skinny$doc[1:1627]) #another probable change point at 1628 + 791 = 2419
+
+#Pettitt test for rows 1628:3558
+pettitt.test(carbon.data.skinny$doc[1628:3558]) #another change point at 1628 + 928 = 2556
+
+```
+
+```{r, echo=TRUE, eval=TRUE}
+#determining change point between 2419 and 2556
+pettitt.test(carbon.data.skinny$doc[2419:2556]) #breakpoint at 2419 + 100 = 2519
+
+#Mann-Kendall test to see if there is a trend between 2519 and 2556
+mk.test(carbon.data.skinny$doc[2519:2556]) #there is no trend between these rows, so the last breakpoint is 2519
+```
+
+Decided to conduct a Mann-Kendall test on Peter, Paul, and West Long Lake because those are the lakes that had continuous samping as shown in \autoref{fig:fig9}. 
+```{r, echo=FALSE, eval=TRUE fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig10} Dissolved organic carbon concentration over time with year on the x-axis."}
+
+#graph of doc concentration over time
+ggplot(carbon.data.skinny, aes(x = Date, y = doc, color = Lake.Name)) + 
+  geom_point(alpha=0.5, size = 1) +
+  labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  geom_vline(xintercept = as.Date("2000-08-23", origin = "1970-01-01"), color="#253494", lty = 2) +  #change point at row 1628
+  geom_vline(xintercept = as.Date("2006-08-21", origin = "1970-01-01"), color="#7fcdbb", lty = 2) +  #change point at 2419
+  geom_vline(xintercept = as.Date("2008-06-17", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+ #change point at 2556
+  geom_vline(xintercept = as.Date("1994-06-29", origin = "1970-01-01"), color="#253494", lty = 2)  
+
+  
+  grid arrange to get one large graph and then do the lakes seperate 
+  Peter, Paul, Tuesday, West, and East lakes for the Pettit and Man-Kendall test 
+```
+
+
+```{r, echo=FALSE, eval=TRUE}
+
+#graph showing DOC varying depending on depth (facet wrap by season)
+
+
+
+```
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
 
@@ -198,5 +423,6 @@ ggplot(carbon.data.skinny) +
 # Summary and Conclusions
 <Summarize your major findings from your analyses. What conclusions do you draw from your findings? Make sure to apply this to a broader application for the research question you have answered.>
 
+Figure ___ (daynumber and DOC concentration figure) shows that sampling was only done in the summer, which indicates that it will not be possible to detect a seasonal trend between depth and DOC. Further, Figure _ (qqplot figures) show that the dissolved organic carbon data is not normally distributed, thus leading to the conclusion that a linear model will not be feasible with this data. When the dissolved oranic carbon is log transformed as Figure (log transformed qqplot) shows, the data looks more normal than it did when not log transformed. Also, figure (violin plot figure) shows that DOC varies accross the different lakes, which leads to the anova test where Lake is included as an interaction with depth. Also, it is apparent from figure (boxplot of depth) that DOC does not increase or decrease with depth; its most likely variable, and thus likely variable amongst lakes.  
 
-
+Peter Lake has a high concentration likely due to the fact that there was an experiment with Peter and Paul lakes, where nutrients were put into the lakes. 
