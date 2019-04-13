@@ -119,22 +119,6 @@ dim(carbon.data)
 colnames(carbon.data)[1:5] <- c("Lake.ID", "Lake.Name", "Year", "Day.Number", "Date")
 ```
 
-```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, fig.cap="\\label{fig:fig1}Dissolved Organic Carbon (DOC) over time", fig.align="center"}
-#graph looking at DOC over time
-ggplot(carbon.data) +
-  geom_point(aes(x = carbon.data$Year, 
-  y = carbon.data$doc))
-```
-
-The following graphs explore the Carbon dataset. \autoref{fig:fig1} shows dissolved organic carbon over time. \autoref{fig:fig1} was created to determine if there was a pattern of dissolved organic carbon in lakes over the years. \autoref{fig:fig2} is a frequency polygon graph looking at the dissolved inorganic carbon (DIC) in each lake. This graph was created to see if there are some lakes with higher DIC than others, which could influence further analysis. 
-
-```{r, warning = FALSE, fig.cap="\\label{fig:fig2}Dissolved Inorganic Carbon in each Lake"}
-#frequency polygon graph looking at DOC in each lake
-ggplot(carbon.data) + 
-  geom_freqpoly(aes(x = carbon.data$doc, 
-                 color = Lake.Name), bins = 20)
-```
-
 ```{r}
 #filtering dataset by depth id and depth description and then selecting certain columns
 carbon.data.skinny <- carbon.data %>%
@@ -153,47 +137,53 @@ write.csv(carbon.data.skinny,
           file = "../Processed/NTL-LTER_Lake_Carbon_Processed.csv")
 ```
 
-```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig3} QQplot showing whether data for dissolved organic carbon is normally distributed."}
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig1} QQplot showing whether data for dissolved organic carbon is normally distributed."}
 #qqplot of doc to see if there is a normal relationship
 qqnorm(carbon.data.skinny$doc) 
 qqline(carbon.data.skinny$doc)
 ```
 
-```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig3} Log QQplot of dissolved organic carbon data."}
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig2} Log QQplot of dissolved organic carbon data."}
 #qqplot of log(doc) to see if this is better than the regular qqplot
 qqnorm(log(carbon.data.skinny$doc))
 qqline(log(carbon.data.skinny$doc))
 ```
 
-A qqplot was run to determine if the dissolved organic carbon data had a normal distribution. 
+\autoref{fig:fig1} is a qqplot that shows whether the dissolved organic carbon data has a normal distribution. From \autoref{fig:fig1}, it is clear that the dissolved organic carbon data do not follow a normal distribution. Becuase the data are not normally distributed, a log qqplot was run to see if log transforming the data would help the data look more normally distributed. \autoref{fig:fig2} shows the dissolved organic carbon data log transformed. From \autoref{fig:fig2} it is clear that dissolved organic carbon is not normally distributed, but log transforming the data makes the data more normally distributed than not log transforming the data. 
 
-```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved Organic Carbon Varying with depth section of each lake. Depth increases from left to right in graph, with Epilimnion being the surface of the lake."}
-#graph looking at doc with depth
-ggplot(carbon.data.skinny) +
-  geom_boxplot(aes(x = depth, y = doc)) +
-  labs(x = "Depth", y = "Dissolved Organic Carbon")
-
+```{r, eval = TRUE, echo = FALSE, warning = FALSE, fig.cap="\\label{fig:fig3}Hisogram of dissolved organic carbon (mg/L)."}
 #histogram to look at the distribution of doc
 ggplot(carbon.data.skinny) +
   geom_histogram(aes(x = doc), 
-                 binwidth = 0.5, fill = "grey", color = "black")
-
-#creating a density curve for the histogram 
-x <- seq(0, 55, length.out=10)
-df <- with(carbon.data.skinny, data.frame(x = x, y = dnorm(x, mean(doc), sd(doc))))
-
-#histogram to look at the distribution of doc and the density
-ggplot(carbon.data.skinny) +
-  geom_histogram(aes(x = doc), 
                  binwidth = 0.5, fill = "grey", color = "black") +
-  geom_line(data = df, aes(x = x, y = y), color = "red")
-
-
-hist(carbon.data.skinny$doc, bins = 30)
+  labs(x = "Dissolved Organic Carbon (mg/L)", y = "Count of DOC")
 
 ```
 
+\autoref{fig:fig3} shows a histogram of the distribution of dissolved organic carbon (mg/L). From \autoref{fig:fig3} it is apparent that the distribution of dissolved organic carbon is not noramlly distributed. This information will factor into the statistical analyses conducted since the data is not normally distributed. 
 
+```{r, eval = TRUE, echo = FALSE, warning = FALSE, fig.cap="\\label{fig:fig4}Dissolved Inorganic Carbon in each Lake"}
+#frequency polygon graph looking at DOC in each lake
+ggplot(carbon.data.skinny) + 
+  geom_freqpoly(aes(x = carbon.data.skinny$doc, color = Lake.Name), bins = 20) +
+  labs(x = "Dissolved Organic Carbon (mg/L)", "Count of DOC", color = "Lake Name") +
+  scale_color_brewer(palette = "Dark2")
+
+```
+
+\autoref{fig:fig4} shows the cumulative frequency of dissolved organice carbon in each lake. From \autoref{fig:fig4}, it is apparent that Paul lake has the highest cumulative frequency of dissolved organic carbon, followed by Peter lake. \autoref{fig:fig4} also shows that Peter and Paul lake mainly have dissolved organic carbon amounts between 0 mg/L and 10 mg/L, which is why there are two high spikes. The other lakes have dissolved orgnic carbon amounts that are more spread out, as shown in \autoref{fig:fig4}.  
+
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig5} Dissolved Organic Carbon Varying with depth section of each lake. Depth increases from left to right in graph, with Epilimnion being the surface of the lake."}
+#graph looking at doc with depth
+ggplot(carbon.data.skinny) +
+  geom_boxplot(aes(x = depth, y = doc, fill = depth)) +
+  labs(x = "Depth", y = "Dissolved Organic Carbon (mg/L)") +
+  scale_fill_brewer("ece7f2", "a6bddb", "2b8cbe")
+
+```
+
+\autoref{fig:fig5} shows a box plot of each depth category of the lake against the doc measurements. From \autoref{fig:fig5} it looks like there is no relationship between depth and dissolved organic carbon (mg/L). \autoref{fig:fig5} indicates that the Epilimnion (water closest to the surface) and Hypolimnion (water from deepest part of the lake) have greater medians than the Metalimnion or the pooled mixed layer (PML). However, the PML has the greatest distribution of dissolved organic carbon, with one sample that might be considered an outlier as seen in \autoref{fig:fig5}.
 
 
 ```{r, fig.height = 9, fig.width = 7, warning = FALSE, fig.cap="\\label{fig:fig6} Dissolved Organic Carbon concentrations in each lake. Depth of lake is represented by various colors."}
@@ -201,63 +191,35 @@ hist(carbon.data.skinny$doc, bins = 30)
 #Violin plot with depth as the x-axis and doc as the y-axis
 ggplot(carbon.data.skinny) + 
   geom_violin(aes(x = depth, y = doc, fill = depth), draw_quantiles = c(0.25, 0.5, 0.75)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_fill_brewer(palette="Set2") +
+  scale_fill_brewer(palette = "Blues", direction = 1) +
   labs(x = "Depth", y = "Dissolved Organic Carbon (mg/L)", fill = "Depth") +
-  facet_wrap(vars(Lake.Name), nrow = 4)
-
-dev.print(pdf,        # copies the plot to a the PDF file
-          "CW_Figure.pdf")
+  facet_wrap(vars(Lake.Name), ncol = 2) + 
+  theme(panel.border = element_rect(color = "black", fill=NA, size=2), axis.text.x  =             element_text(size=12))
+  
 ```
 
-\autoref{fig:fig6} shows the distribution of dissolved organic carbon in each depth layer faceted by each lake. From \autoref{fig:fig6}
+\autoref{fig:fig6} shows the distribution of dissolved organic carbon (mg/L) in each depth layer faceted by each lake. From \autoref{fig:fig6}, the PML of Peter lake has the greatest distribution of dissolved organic carbon (mg/L). Further, the distribution of dissolved organic carbon (mg/L) in each lake does not vary with depth. 
 
-```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig7} Dissolved organic carbon concentration in each lake."}
-#plot of DOC in each lake
-ggplot(carbon.data.skinny) + 
-  geom_freqpoly(aes(x = doc, color = Lake.Name), bins = 20)
 
+```{r, fig.height = 6, fig.width = 4.5, warning = FALSE, echo=FALSE, eval=TRUE, fig.cap="\\label{fig:fig7} Dissolved organic carbon concentration over time with year on the x-axis."}
+#plot looking at how doc varies over the years
+ggplot(carbon.data.skinny, aes(x = Year, y = doc, color = Lake.Name)) +
+  geom_point(alpha = 0.5) +
+  labs(x = "Year", y = "Dissolved Organic Carbon (mg/L)", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2") 
+  
 ```
 
-```{r}
-#make a new column with seasons that are seperated by daynum; then write a pipe function saying if daynum == [1:150], "summer" etc
-
-#creating an empty column titled season
-#carbon.data.skinny$season <- NA
-
-#divide the daynum into seasons, run an anova on this to see if season is a random effect
-
-#random effect anova
-
-#make a graph with facet wrap for doc and season; facet wrap by season & facet wrap by depth or lake?
-```
+\autoref{fig:fig7} shows dissolved organic carbon over the years. \autoref{fig:fig1} was created to determine if there was a pattern of dissolved organic carbon in lakes over the years. From \autoref{fig:fig7} only Peter, Paul, and West long lake were continuously sampled very year. Other lakes, such as Hummingbird lake, were only sampled between the late 1990s to the early 2000s.
 
 ```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig8} Dissolved organic carbon concentration over time with day number of the year on the x-axis."}
 #graph looking at how doc varies over time with Day Number on the x-axis
 ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
-  geom_point() +
-  labs(x = "Day of Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
-  scale_color_brewer(palette = "Set2")
-```
-
-```{r}
-#same graph as above, but removing the two outliers to get a better understanding of the distribution of DOC throughout the year
-ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
-  geom_point() +
-  labs(x = "Day of Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
-  scale_color_brewer(palette = "Set2")
-```
-
-```{r, fig.height = 6, fig.width = 6, warning = FALSE, echo=FALSE, eval=TRUE, fig.cap="\\label{fig:fig9} Dissolved organic carbon concentration over time with year on the x-axis."}
-
-#plot looking at how doc varies over the years
-ggplot(carbon.data.skinny, aes(x = Year, y = doc, color = Lake.Name)) +
   geom_point(alpha = 0.5) +
-  labs(x = "Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
-  scale_color_brewer(palette = "Set2") 
-  
+  labs(x = "Day of Year", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  scale_color_brewer(palette = "Set2")
+
 ```
-<Include text sections to accompany these R chunks to explain the reasoning behind your workflow, and the rationale for your approach.>
 
 \autoref{fig:fig8} shows the day number of the year plotted against dissolved organic carbon with the color representing each lake. From \autoref{fig:fig8} it is apparent that sampling was done mainly between days 140 and 250 of the year, which is during spring and summer months. From \autoref{fig:fig8} it is apparent that there is a cluseter of data points between 5 and 15 (concentrations) which signals that there is likely not a linear relationship between dissovled organic carbon and time of year. Because of this, a time series analysis will be conducted as part of the statistical tests.
 
