@@ -47,6 +47,7 @@ library(lubridate)
 library(lme4)
 library(nlme)
 library(trend)
+library(gridExtra)
 
 # Set your ggplot theme
 caroline_theme <- theme_classic(base_size = 16) + 
@@ -98,7 +99,7 @@ xtable(carbon.data.summary)
 
 <Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
 
-```{r}
+```{r, eval=TRUE, echo=FALSE}
 #class of sampledate column
 class(carbon.data$sampledate)
 
@@ -154,13 +155,17 @@ write.csv(carbon.data.skinny,
 
 ```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig3} QQplot showing whether data for dissolved organic carbon is normally distributed."}
 #qqplot of doc to see if there is a normal relationship
-qqnorm(carbon.data.skinny$doc)
+qqnorm(carbon.data.skinny$doc) 
 qqline(carbon.data.skinny$doc)
+```
 
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig3} Log QQplot of dissolved organic carbon data."}
 #qqplot of log(doc) to see if this is better than the regular qqplot
 qqnorm(log(carbon.data.skinny$doc))
 qqline(log(carbon.data.skinny$doc))
 ```
+
+A qqplot was run to determine if the dissolved organic carbon data had a normal distribution. 
 
 ```{r, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig4} Dissolved Organic Carbon Varying with depth section of each lake. Depth increases from left to right in graph, with Epilimnion being the surface of the lake."}
 #graph looking at doc with depth
@@ -243,7 +248,7 @@ ggplot(carbon.data.skinny, aes(x = Day.Number, y = doc, color = Lake.Name)) +
   scale_color_brewer(palette = "Set2")
 ```
 
-```{r, fig.height = 6, fig.width = 6, warning = FALSE, echo=FALSE, eval=TRUE fig.cap="\\label{fig:fig9} "Dissolved organic carbon concentration over time with year on the x-axis.""}
+```{r, fig.height = 6, fig.width = 6, warning = FALSE, echo=FALSE, eval=TRUE, fig.cap="\\label{fig:fig9} Dissolved organic carbon concentration over time with year on the x-axis."}
 
 #plot looking at how doc varies over the years
 ggplot(carbon.data.skinny, aes(x = Year, y = doc, color = Lake.Name)) +
@@ -320,16 +325,18 @@ carbon.tuesday <- filter(Carbon.five.lakes, Lake.Name == "Tuesday Lake")
 carbon.east <- filter(Carbon.five.lakes, Lake.Name == "East Long Lake")
 
 carbon.west <- filter(Carbon.five.lakes, Lake.Name == "West Long Lake")
-
+```
+```{r}
 #plot of doc over time in the five selected lakes for just the Metalimnion
 ggplot(Carbon.five.lakes, aes(x = Date, y = doc, color = Lake.Name)) + 
   geom_point(alpha=0.5, size = 1) +
   labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name")
+  scale_color_brewer()
 
+```
+
+```{r}
 #Mann-Kendall Test for dissolved organic carbon in each lake
-
-#mk.test in Peter lake
-mk.test(carbon.peter$doc) #positive z score, so positive change and p-value is greater than 0.05, so we accept the null that there is no trend in data for Peter lake and DOC
 
 #mk.test in Paul lake 
 mk.test(carbon.paul$doc) #negative z-score indicates a negative trend and a low p-value means we will reject the null that there is no trend in the data
@@ -338,21 +345,77 @@ mk.test(carbon.paul$doc) #negative z-score indicates a negative trend and a low 
 pettitt.test(carbon.paul$doc) #change point at row 138
 
 #mk.test in Paul Lake before and after change point
-mk.test(carbon.paul$doc[1:137]) #negative z score indicates a negative trend; p-value less than 0.05, so reject the null that there is no trend in the data and do another pettitt test
-mk.test(carbon.paul$doc[138:373]) #positive z-score indicates there's a positive trend  
+mk.test(carbon.paul$doc[1:137]) #negative z score indicates a negative trend; p-value less than 0.05, so reject the null and accept the alternative that there is a trend in the data and do another pettitt test to see if there is another change point
 
+mk.test(carbon.paul$doc[138:373]) #positive z-score indicates there's a positive trend and p-value greater than 0.05, so we accept null hypothesis that there is no trend in the data between rows 138:373
+
+#pettitt test in Paul Lake
+pettitt.test(carbon.paul$doc[1:137]) #p-value is lower than 0.05 and there is a potential change point at row 64, so 1+64 = 65; An additional mk.test will be run to determine if there is a change point between rows 1:64, and 65: 137
+
+#mk.test in Paul Lake
+mk.test(carbon.paul$doc[1:64]) #p-value is greater than 0.05, so we accept the null that there is no trend between 1:64 
+mk.test(carbon.paul$doc[65:137]) #p-value is greater than 0.05, so we accept the null that there is no trend between 65:137
+
+```
+
+```{r}
+#plot of Paul lake with changepoints in doc 
+ggplot(carbon.paul, aes(x = Date, y = doc)) + 
+  geom_point(alpha=0.5, size = 1, color = "blue") +
+  labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  geom_vline(xintercept = as.Date("1998-08-03", origin = "1970-01-01"), color="#253494", lty = 2) +  #change point at row 138
+  geom_vline(xintercept = as.Date("1992-09-07", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+  #change point at 2419
+  #geom_vline(xintercept = as.Date("2008-06-17", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+ #change point at 2556
+  #geom_vline(xintercept = as.Date("1994-06-29", origin = "1970-01-01"), color="#253494", lty = 2)  
+
+```  
+
+```{r}
+#mk.test in Peter lake
+mk.test(carbon.peter$doc) #positive z score, so positive change and p-value is greater than 0.05, so we accept the null that there is no trend in data for Peter lake and DOC
+
+```
+
+```{r}
 #mk.test in Tuesday lake
-mk.test(carbon.tuesday$doc) #positive z-score indicates a positive trend in the data and the p-value is very low, so we reject the null that there is no trend in the data
+mk.test(carbon.tuesday$doc) #positive z-score indicates a positive trend in the data and the p-value is very low, so we reject the null that there is no trend in the data and do a pettitt test
 
+#pettitt test for Tuesday Lake
+pettitt.test(carbon.tuesday$doc) #potential change point at row 77 (2002-09-04)
+
+#mk test between 1:76 and 77:135
+mk.test(carbon.tuesday$doc[1:76]) #very low p-value so will rerun a pettitt test on this section
+mk.test(carbon.tuesday$doc[77:135]) #p-value greater than 0.05, so accept the null that there is no trend in this section 
+
+#pettitt test for Tuesday Lake between 1:76
+pettitt.test(carbon.tuesday$doc[1:76]) #there is a change point at 44 + 1 = 45, so will run an mk.test on 1:44 and 45:76; (1990-08-29)
+
+#mk.test for Tuesday lake between 1:44 and 45:76
+mk.test(carbon.tuesday$doc[1:44]) #p-value is large, so accept the null that there is no trend in this section
+mk.test(carbon.tuesday$doc[45:76]) #p-value is greater than 0.05 in this section as well so accept the null that there is no trend in this section
+```
+
+
+```{r}
+
+#plot of Paul lake with changepoints in doc 
+ggplot(carbon.tuesday, aes(x = Date, y = doc)) + 
+  geom_point(alpha=0.5, size = 1, color = "blue") +
+  labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name") +
+  geom_vline(xintercept = as.Date("1990-08-29", origin = "1970-01-01"), color="#253494", lty = 2) +  #change point at row 45
+  geom_vline(xintercept = as.Date("2002-09-04", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+  #change point at 77
+  #geom_vline(xintercept = as.Date("2008-06-17", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+ #change point at 2556
+  #geom_vline(xintercept = as.Date("1994-06-29", origin = "1970-01-01"), color="#253494", lty = 2)  
+
+```
+
+```{r}
 #mk.test in West Long Lake
+mk.test(carbon.west$doc) #p-value is equal to 0.05, so we will assume that the null hypothesis is true and that there is no trend in the metalimnion of West Long Lake with doc
 
 #mk.test in East Long Lake
+mk.test(carbon.east$doc) #p-value is greater than 0.05 indicating that there is no trend in the data for East Long lake doc
 
-
-#Pettitt test in Tuesday lake
-
-
-mk.test(carbon.data.skinny$doc)
 
 ```
 A Mann-Kendall test was run to determine if there is a monotonic trend in dissolved organic carbon in all of the lakes over time. The Mann-Kendall test results have a very low p-value (p-value = < 2.2e-16) and a negative z-score. Since the p-value is much smaller than 0.05, we reject the null hypothesis that there is no trend over time. The null hypothesis was rejected, which means we should run a Pettitt test to determine if and where there is a change point in the data. According to the Pettitt test, there is a possible chang point at row 1628. 
@@ -389,31 +452,7 @@ pettitt.test(carbon.data.skinny$doc[2419:2556]) #breakpoint at 2419 + 100 = 2519
 mk.test(carbon.data.skinny$doc[2519:2556]) #there is no trend between these rows, so the last breakpoint is 2519
 ```
 
-Decided to conduct a Mann-Kendall test on Peter, Paul, and West Long Lake because those are the lakes that had continuous samping as shown in \autoref{fig:fig9}. 
-```{r, echo=FALSE, eval=TRUE fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig10} Dissolved organic carbon concentration over time with year on the x-axis."}
-
-#graph of doc concentration over time
-ggplot(carbon.data.skinny, aes(x = Date, y = doc, color = Lake.Name)) + 
-  geom_point(alpha=0.5, size = 1) +
-  labs(x = "Date", y = "Dissolved Organic Carbon", color = "Lake Name") +
-  geom_vline(xintercept = as.Date("2000-08-23", origin = "1970-01-01"), color="#253494", lty = 2) +  #change point at row 1628
-  geom_vline(xintercept = as.Date("2006-08-21", origin = "1970-01-01"), color="#7fcdbb", lty = 2) +  #change point at 2419
-  geom_vline(xintercept = as.Date("2008-06-17", origin = "1970-01-01"), color="#7fcdbb", lty = 2) #+ #change point at 2556
-  geom_vline(xintercept = as.Date("1994-06-29", origin = "1970-01-01"), color="#253494", lty = 2)  
-
-  
-  grid arrange to get one large graph and then do the lakes seperate 
-  Peter, Paul, Tuesday, West, and East lakes for the Pettit and Man-Kendall test 
-```
-
-
-```{r, echo=FALSE, eval=TRUE}
-
-#graph showing DOC varying depending on depth (facet wrap by season)
-
-
-
-```
+Decided to conduct a Mann-Kendall test on Peter, Paul, and West Long Lake because those are the lakes that had continuous sampeling as shown in \autoref{fig:fig9}. 
 
 <Include text sections to accompany these R chunks to explain the reasoning behind your workflow, rationale for your approach, and the justification of meeting or failing to meet assumptions of tests.>
 
