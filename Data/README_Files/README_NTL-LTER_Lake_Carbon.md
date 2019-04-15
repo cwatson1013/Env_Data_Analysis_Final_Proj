@@ -7,18 +7,24 @@ This dataset was used for the Environmental Data Analytics (ENV872L) class at Du
 This database has information from the North Temperate Lakes District in Wisconsin, USA. Data were collected from the lakes in the database as part of a long term study with the Long Term Ecological Research station. The Long Term Ecological Research station was established by the National Science Foundation. 
 
 ## Database Information
-The data were obtained from the North Temperate Lakes Long Term Ecological Research site. Additional information can be found here: https://lter.limnology.wisc.edu/about/overview
+The data were obtained from the North Temperate Lakes Long Term Ecological Research site. Additional information can be found online at this site: https://lter.limnology.wisc.edu/about/overview
+
+The data were obtained by using the Data Search tool. 
+On the Data page, the following were selected: 
+* carbon (Search keywords)
+* Cascade (NTL Categories)
+* Select: Cascade Project at North Temperate Lakes LTER Core Data Carbon 1984 - 2016
 
 Data were collected using the Data tool (https://lter.limnology.wisc.edu/data).
 On the Data homepage, the following selections were made: 
 * Cascade (NTL Categories)
 * Cascade Project at North Temperate Lakes LTER Core Data Carbon 1984 - 2016
 
-AND
+THEN 
 
-* On each of the three pages, Download All Data (csv) was chosen.
+* Download All Data (csv) was selected to download the data
 
-The csv files were saved as `NTL-LTER_Lake_Carbon_Raw.csv`. 
+The csv file was saved as `NTL-LTER_Lake_Carbon_Raw.csv`. 
 
 ## Data Content Information
 From the NTL-LTER site: 
