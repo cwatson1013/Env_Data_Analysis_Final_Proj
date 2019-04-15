@@ -1,6 +1,8 @@
 ---
 output: 
   pdf_document:
+    includes:
+          in_header: header.tex
     keep_tex: yes
     fig_caption: yes
     number_sections: yes
@@ -27,10 +29,10 @@ mainfont: Times New Roman
 
 <Note: set up autoreferencing for figures and tables in your document>
 
-```{r setup, include=FALSE, warning=FALSE, message=FALSE, echo=TRUE, eval=TRUE}
+```{r setup, warning=FALSE, message=FALSE, echo=TRUE, eval=TRUE}
 
-knitr::opts_chunk$set(echo = FALSE, eval = TRUE, fig.path = 'myproject/plot-',
-                      cache = TRUE)
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.path = 'myproject/plot-',
+                      cache = TRUE, fig.pos = "H")
 
 # Set your working directory
 setwd("/Users/carolinewatson/Documents/Spring 2019/Environmental Data Analytics/Final_Project/Data/Code")
@@ -85,7 +87,11 @@ carbon.data <- read.csv("../Raw/NTL-LTER_Lake_Carbon_Raw.csv")
 
 #structure of data frame
 carbon.data.summary <- summary(carbon.data)
+```
 
+\newpage
+Landscape:
+```{r, message=FALSE, warning=FALSE, tbls="Summary of NTL-LTER Lake Carbon Data", results="asis"}
 #summary of data structure
 kable(carbon.data.summary, caption = "Summary of Carbon Data from NTL-LTER Lakes in Wisconsin") %>% kable_styling(latex_options = c("hold_position", "striped", "scale_down"))
 
@@ -95,12 +101,14 @@ xtable(carbon.data.summary)
 
 ```
 
+
 \newpage
 
 # Exploratory Data Analysis and Wrangling
 
 <Include R chunks for 5+ lines of summary code (display code and output), 3+ exploratory graphs (display graphs only), and any wrangling you do to your dataset(s).> 
 
+Portrait
 ```{r}
 #class of sampledate column
 class(carbon.data$sampledate)
@@ -129,7 +137,8 @@ carbon.data.skinny <- carbon.data %>%
            depth == "Metalimnion") %>%
   mutate(depth = factor(depth, levels = c("Epilimnion", "Metalimnion", "PML", "Hypolimnion"))) %>%
   filter(is.na(doc) == FALSE) %>%
-  select(Lake.ID:depth_id, doc)
+  select_(Lake.ID:depth_id, doc)
+  #select(Lake.ID:depth_id, doc)
 
 #converting dat column to date instead of factor
 carbon.data$sampledate <- as.Date(carbon.data$Date, format = "%m/%d/%y")
@@ -140,13 +149,13 @@ write.csv(carbon.data.skinny,
 ```
 
 
-```{r, echo=FALSE, eval=TRUE fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig1} QQplot showing whether data for dissolved organic carbon is normally distributed."}
+```{r, echo=FALSE, eval=TRUE, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig1}QQplot showing whether data for dissolved organic carbon is normally distributed."}
 #qqplot of doc to see if there is a normal relationship
 qqnorm(carbon.data.skinny$doc) 
 qqline(carbon.data.skinny$doc)
 ```
 
-```{r, echo=FALSE, eval=TRUE, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig2} Log QQplot of dissolved organic carbon data."}
+```{r, echo=FALSE, eval=TRUE, fig.height = 6, fig.width = 6, warning = FALSE, fig.cap="\\label{fig:fig2}Log QQplot of dissolved organic carbon data."}
 #qqplot of log(doc) to see if this is better than the regular qqplot
 qqnorm(log(carbon.data.skinny$doc))
 qqline(log(carbon.data.skinny$doc))
@@ -253,9 +262,9 @@ print(summary(comp))
 
 comp.cld <- cld(comp)
 
-carbon.data.skinny$dl <- with(carbon.data.skinny, interaction(depth, Lake.Name))
-cell <- lm(doc ~ dl - 1, data = carbon.data.skinny)
-summary(glht(cell, linfct = K))
+#carbon.data.skinny$dl <- with(carbon.data.skinny, interaction(depth, Lake.Name))
+#cell <- lm(doc ~ dl - 1, data = carbon.data.skinny)
+#summary(glht(cell, linfct = K))
 
 #plot of post-hoc Tukey test
 plot(comp.cld)
@@ -273,16 +282,16 @@ A non-parametric Post-Hoc Tukey test was run to determine the pairwise differenc
 #wrangling dataset down to just the three lakes
 Carbon.three.lakes <- 
   carbon.data.skinny %>%
-  select(-Lake.ID, -depth_id) %>%
   filter(depth == "Hypolimnion") %>%
-  filter(Lake.Name == "Peter Lake" | Lake.Name == "Paul Lake" | Lake.Name == "West Long Lake")
+  filter(Lake.Name == "Peter Lake" | Lake.Name == "Paul Lake" |
+           Lake.Name == "West Long Lake")
 
 #splitting data sets up into each lake data
-carbon.peter2 <- filter(Carbon.five.lakes2, Lake.Name == "Peter Lake")
+carbon.peter2 <- filter(Carbon.three.lakes, Lake.Name == "Peter Lake")
 
-carbon.paul2 <- filter(Carbon.five.lakes2, Lake.Name == "Paul Lake")
+carbon.paul2 <- filter(Carbon.three.lakes, Lake.Name == "Paul Lake")
 
-carbon.west2 <- filter(Carbon.five.lakes2, Lake.Name == "West Long Lake")
+carbon.west2 <- filter(Carbon.three.lakes, Lake.Name == "West Long Lake")
 ```
 
 A Mann-Kendall test was run to determine if there is a monotonic trend in dissolved organic carbon in Peter, Paul, and West Long lakes over time. These lakes were chosen based off of the \autoref{fig:fig7} which shows which lakes were monitored continuously over time. The hypolimnion was chosen because organic carbon can come from decomposed animals and plants in a lake which could settle at the bottom of the lake, or the hypolimnion.
@@ -290,7 +299,7 @@ A Mann-Kendall test was run to determine if there is a monotonic trend in dissol
 
 ```{r}
 #plot of doc over time in the five selected lakes for just the Metalimnion
-carbon.five.lakes <- ggplot(Carbon.five.lakes2, aes(x = Date, y = doc, color = Lake.Name)) + 
+carbon.three.lakes.plot <- ggplot(Carbon.three.lakes, aes(x = Date, y = doc, color = Lake.Name)) + 
   geom_point(alpha=0.5, size = 1) +
   labs(x = "Date", y = "Dissolved Organic Carbon (mg/L)", color = "Lake Name") +
   scale_color_brewer(palette = "Set2")
@@ -391,7 +400,7 @@ mk.test(carbon.west2$doc[90:102]) #no trend detected
 pettitt.test(carbon.west2$doc[83:89]) #changepoint at 2+83 = 85
 
 #mk.test on West Long Lake
-mk.test(carbon.west2$doc[83:84])
+#mk.test(carbon.west2$doc[83:84]) #this cannot be run because there must be at least 3 elements
 mk.test(carbon.west2$doc[83:89])
 
 ```
@@ -418,7 +427,7 @@ lay <- rbind(c(1,1,2,3),
              c(1,1,4,5),
              c(6,7,8,9))
 
-grid.arrange(carbon.five.lakes, peter, west.long, paul.lake,
+grid.arrange(carbon.three.lakes.plot, peter, west.long, paul.lake,
             nrow = 2)
              
 #layout_matrix = lay)
