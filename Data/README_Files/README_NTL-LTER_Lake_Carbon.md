@@ -54,3 +54,4 @@ Data files are named according to the following naming convention: `databasename
 **format** is a non-proprietary file format (e.g., .csv, .txt)
 
 ## Additional Information and Support
+For more information, contact Caroline Watson (caroline.watson@duke.edu)
