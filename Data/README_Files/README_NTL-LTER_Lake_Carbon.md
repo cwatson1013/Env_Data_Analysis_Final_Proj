@@ -1,4 +1,4 @@
-# NTL-LTER Lake Carbon Datasets
+# NTL-LTER Lake Carbon Dataset
 
 
 ## Summary
@@ -29,7 +29,7 @@ The csv file was saved as `NTL-LTER_Lake_Carbon_Raw.csv`.
 ## Data Content Information
 From the NTL-LTER site: 
 ### Carbon
-Data for dissolved inorganic and organic carbon (DIC and DOC respectively), particulate organic matter, partial pressure of CO2, and absorbance at 440nm were collected. The water samples were collected using a Van Dorn sampler. Organic Carbon and absorbance samples were collected at depths which were recorded as epilimnion, metalimnion, hypolimnion and PML (Pooled Mixed Sample). Inorganic carbon samples were taken at depths of 100%, 50%, 25%, 10%, 5%, and 1% of the surface irradiance. Some samples of inorganic carbon were collected from the hypolimnion as well. Partial pressure of CO2 samples came from 2 meters above the surface of the lake (which were air samples) and right below the surface of the lake (water samples). The frequency of sampling varied by site and there were 14 sites that were sampled. 
+Data for dissolved inorganic and organic carbon (DIC and DOC respectively), particulate organic matter, partial pressure of CO2, and absorbance at 440nm were collected. The water samples were collected using a Van Dorn sampler. Organic Carbon and absorbance samples were collected at depths which were recorded as epilimnion, metalimnion, hypolimnion and PML (Pooled Mixed Layer). Inorganic carbon samples were taken at depths of 100%, 50%, 25%, 10%, 5%, and 1% of the surface irradiance. Some samples of inorganic carbon were collected from the hypolimnion as well. Partial pressure of CO2 samples came from 2 meters above the surface of the lake (which were air samples) and right below the surface of the lake (water samples). The frequency of sampling varied by site and there were 14 sites that were sampled. 
 
 Detailed field and laboratory protocols can be found in the Cascade Methods Manual, found here: https://cascade.limnology.wisc.edu/public/public_files/methods/CascadeMa...
 POC, PON and DOC: 1. 100 - 300 ml (Typically ~200mL for PML, 150 metalimnion and 75 – 100 for the hypolimnion) of lake water from each depth was filtered through 153 um mesh to remove large zooplankton. Water was then filtered through a precombusted 25mm GF/F filter (0.7 um pore size) at less than 200 mm Hg pressure. Filters were placed in drying oven at 60 C to dry for at least 48 hours. 20mL of filtered water was stored in a scintillation vial and acidified with 200uL of 2N H2SO4 for DOC analysis. Blank samples for POC and DOC were prepared with deionized water to control for contamination. All samples were sent to the Cary Institute of Ecosystem Studies for analysis.
